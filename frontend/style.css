@@ -241,20 +241,40 @@ header h1 {
 }
 
 .sources-content {
-    padding: 0 0.5rem 0.25rem 1.5rem;
+    padding: 0.5rem 0.5rem 0.5rem 1.5rem;
     color: var(--text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
-/* Source links styling */
+/* Source links styling - pill/badge style */
 .sources-content a {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: rgba(79, 146, 250, 0.1);
     color: var(--primary);
     text-decoration: none;
-    border-bottom: 1px solid transparent;
-    transition: border-color 0.2s ease;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    border: 1px solid rgba(79, 146, 250, 0.2);
+    transition: all 0.2s ease;
+    position: relative;
 }
 
 .sources-content a:hover {
-    border-bottom-color: var(--primary);
+    background: rgba(79, 146, 250, 0.2);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(79, 146, 250, 0.2);
+}
+
+/* Add an external link icon */
+.sources-content a::after {
+    content: " ↗";
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+    opacity: 0.7;
 }
 
 /* Markdown formatting styles */
@@ -474,15 +494,36 @@ header h1 {
     letter-spacing: 0.5px;
 }
 
+/* New Chat Button */
+.new-chat-button {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem 0;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    outline: none;
+    transition: color 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+}
+
 .stats-header:focus,
-.suggested-header:focus {
+.suggested-header:focus,
+.new-chat-button:focus {
     color: var(--primary-color);
 }
 
 .stats-header:hover,
-.suggested-header:hover {
+.suggested-header:hover,
+.new-chat-button:hover {
     color: var(--primary-color);
 }
+
 
 .stats-header::-webkit-details-marker,
 .suggested-header::-webkit-details-marker {
