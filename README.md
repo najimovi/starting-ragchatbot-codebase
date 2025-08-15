@@ -58,89 +58,91 @@ The application will be available at:
 - Web Interface: `http://localhost:8000`
 - API Documentation: `http://localhost:8000/docs`
 
-## Component Interaction Diagram
+## System Architecture Diagram
 
 ```
-┌─────────────────────┐        ┌─────────────────────┐        ┌─────────────────────┐
-│     FRONTEND        │        │      FASTAPI        │        │    RAG SYSTEM       │
-│   (script.js)       │        │     (app.py)        │        │ (rag_system.py)     │
-└──────────┬──────────┘        └──────────┬──────────┘        └──────────┬──────────┘
-           │                              │                              │
-           │ 1. POST /api/query           │                              │
-           │    {query, session_id}       │                              │
-           ├──────────────────────────────>                              │
-           │                              │                              │
-           │                              │ 2. rag_system.query()        │
-           │                              ├──────────────────────────────>
-           │                              │                              │
-           │                              │                              ▼
-┌──────────┴──────────┐        ┌──────────┴──────────┐        ┌─────────────────────┐
-│  SESSION MANAGER    │        │   AI GENERATOR      │        │   TOOL MANAGER      │
-│ (session_mgr.py)    │        │ (ai_generator.py)   │        │ (search_tools.py)   │
-└──────────┬──────────┘        └──────────┬──────────┘        └──────────┬──────────┘
-           ▲                              ▲                              │
-           │                              │                              │
-           │ 3. get_history()             │ 4. generate_response()      │
-           └──────────────────────────────┼───────── + tools ───────────┘
-                                          │
-                                          │
+┌─────────────────────────┐         ┌─────────────────────────┐         ┌─────────────────────────┐
+│       FRONTEND          │         │        FASTAPI          │         │      RAG SYSTEM         │
+│     (script.js)         │         │       (app.py)          │         │   (rag_system.py)       │
+└─────────────────────────┘         └─────────────────────────┘         └─────────────────────────┘
+            │                                    │                                    │
+            │     1. POST /api/query             │                                    │
+            │     {query, session_id}            │                                    │
+            ├────────────────────────────────────>                                    │
+            │                                    │                                    │
+            │                                    │     2. rag_system.query()          │
+            │                                    ├────────────────────────────────────>
+            │                                    │                                    │
+            │                                    │                                    ▼
+┌─────────────────────────┐         ┌─────────────────────────┐         ┌─────────────────────────┐
+│    SESSION MANAGER      │         │     AI GENERATOR        │         │     TOOL MANAGER        │
+│   (session_mgr.py)      │         │   (ai_generator.py)     │         │   (search_tools.py)     │
+└─────────────────────────┘         └─────────────────────────┘         └─────────────────────────┘
+            ▲                                    ▲                                    │
+            │     3. get_history()               │     4. generate_response()        │
+            └────────────────────────────────────┼─────────────── + tools ───────────┘
+                                                 │
+                                                 ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                        CLAUDE SONNET 4                                        │
+│  System: "You are an AI assistant with course search tool..."                                 │
+│  Tools: [CourseSearchTool]                                                                    │
+│  Query: "Answer this question about course materials: ..."                                    │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                 │
+                                                 │ 5. Tool Decision
+                                                 ▼
+┌─────────────────────────┐         ┌─────────────────────────┐         ┌─────────────────────────┐
+│    COURSE SEARCH        │         │      VECTOR STORE       │         │       CHROMADB          │
+│        TOOL             │         │   (vector_store.py)     │         │                         │
+│  (search_tools.py)      │         │                         │         │                         │
+└─────────────────────────┘         └─────────────────────────┘         └─────────────────────────┘
+            │                                    │                                    │
+            │     6. execute(query,              │                                    │
+            │        course_name,                │     7. search()                    │
+            │        lesson_number)              │                                    │
+            ├────────────────────────────────────>                                    │
+            │                                    ├────────────────────────────────────>
+            │                                    │                                    │
+            │                                    │  ┌───────────────────────────────┐ │
+            │                                    │  │   course_catalog              │ │
+            │                                    │  │   - Course resolution         │ │
+            │                                    │  │                               │ │
+            │                                    │  │   course_content              │ │
+            │                                    │  │   - Semantic search           │ │
+            │                                    │  └───────────────────────────────┘ │
+            │                                    │                                    │
+            │                                    │     8. SearchResults              │
+            │     9. Formatted results           <────────────────────────────────────┤
+            <────────────────────────────────────┤                                    │
+            │                                    │                                    │
+            │     10. Tool results back to Claude                                    │
+            ▼                                                                         │
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                        CLAUDE SONNET 4                                        │
+│                     Synthesizes tool results into final answer                                │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                 │
+                                                 │ 11. Final response
+                                                 ▼
+┌─────────────────────────┐         ┌─────────────────────────┐         ┌─────────────────────────┐
+│      RAG SYSTEM         │         │        FASTAPI          │         │       FRONTEND          │
+│                         │         │                         │         │                         │
+└─────────────────────────┘         └─────────────────────────┘         └─────────────────────────┘
+            │                                    │                                    │
+            │     12. (response,                 │                                    │
+            │         sources)                   │     13. QueryResponse              │
+            ├────────────────────────────────────>     {answer, sources,              │
+            │                                    │      session_id}                   │
+            │                                    ├────────────────────────────────────>
+            │                                    │                                    │
+            │                                    │                         14. Update UI
+            │                                    │                         - Add message
+            │                                    │                         - Show sources
+            │                                    │                         - Store session
+            ▼                                    ▼                                    ▼
 ```
 
-## Detailed Method Call Flow - Frontend to Backend
-
-```
-┌─────────────────────┐        ┌─────────────────────┐        ┌─────────────────────┐
-│   FRONTEND          │        │    FASTAPI          │        │   RAG ENGINE        │
-│   (script.js)       │        │    (app.py)         │        │  (rag_system.py)    │
-└──────────┬──────────┘        └──────────┬──────────┘        └──────────┬──────────┘
-           │                              │                              │
-           │ sendMessage()                │                              │
-           │ └─> fetch('/api/query')      │                              │
-           ├──────────────────────────────>                              │
-           │                              │                              │
-           │                              │ @app.post("/api/query")      │
-           │                              │ async def query_endpoint()   │
-           │                              ├──────────────────────────────>
-           │                              │                              │
-           │                              │ rag_system = RAGSystem()     │
-           │                              │ response = rag_system.query()│
-           │                              ├──────────────────────────────>
-           │                              │                              │
-           │                              │                              ▼
-┌──────────┴──────────┐        ┌──────────┴──────────┐        ┌─────────────────────┐
-│  DOM MANIPULATION   │        │   EMBEDDINGS        │        │   VECTOR STORE      │
-│  updateUI()         │        │  embed_query()      │        │  search_similar()   │
-└──────────┬──────────┘        └──────────┬──────────┘        └──────────┬──────────┘
-           │                              │                              │
-           │ displayResponse()            │ create_embedding()          │
-           <──────────────────────────────┤ text -> vector[1536]        │
-           │                              ├──────────────────────────────>
-           │                              │                              │
-           │ appendToChat()               │ similarity_search()          │
-           <──────────────────────────────┤ top_k=5                      │
-           │                              ├──────────────────────────────>
-           │                              │                              │
-           │                              │                              ▼
-┌──────────┴──────────┐        ┌──────────┴──────────┐        ┌─────────────────────┐
-│  EVENT HANDLERS     │        │   CONTEXT BUILDER   │        │    LLM SERVICE      │
-│  onSubmit()         │        │  build_context()    │        │  call_openai()      │
-│  onKeyPress()       │        │  combine_chunks()   │        │  stream=True        │
-└──────────┬──────────┘        └──────────┬──────────┘        └──────────┬──────────┘
-           │                              │                              │
-           │ handleUserInput()            │ retrieve_documents()        │
-           ├──────────────────────────────> [relevant_docs]             │
-           │                              ├──────────────────────────────>
-           │                              │                              │
-           │ streamResponse()             │ build_rag_prompt()          │
-           <──────────────────────────────┤ (query, context, history)   │
-           │                              ├──────────────────────────────>
-           │                              │                              │
-           │ renderMarkdown()             │ generate_response()         │
-           <──────────────────────────────┤ (prompt, stream=True)       │
-           │                              <───────────────────────────────
-           │                              │                              │
-           ▼                              ▼                              ▼
-```
 
 ### Query Processing Steps
 
