@@ -152,3 +152,6 @@ Core dependencies managed by uv:
 - `fastapi==0.116.1`: Web framework
 - `uvicorn==0.35.0`: ASGI server
 - `python-dotenv==1.1.1`: Environment management
+- always use uv to run the server do not use pip directly
+- make sure to use uv to manage all dependencies
+- use uv to run Python files
