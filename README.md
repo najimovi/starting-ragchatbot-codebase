@@ -142,59 +142,6 @@ The application will be available at:
            ▼                              ▼                              ▼
 ```
 
-## JavaScript Frontend Integration (script.js)
-
-```javascript
-// script.js - Frontend Application Structure
-
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         script.js (Frontend)                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  Lines 1-50:    Configuration & Setup                                  │
-│  ├── const API_BASE_URL = '/api';                                     │
-│  ├── const SESSION_ID = generateSessionId();                         │
-│  └── const chatContainer = document.getElementById('chat');          │
-│                                                                         │
-│  Lines 51-150:  API Communication                                      │
-│  ├── async function sendQuery(query)                                 │
-│  │   └── fetch(`${API_BASE_URL}/query`, {                           │
-│  │       method: 'POST',                                             │
-│  │       body: JSON.stringify({query, session_id})                  │
-│  │   })                                                              │
-│  ├── async function streamResponse(response)                         │
-│  └── function handleAPIError(error)                                  │
-│                                                                         │
-│  Lines 151-250: UI Components                                          │
-│  ├── function createMessageElement(content, role)                    │
-│  ├── function appendToChat(element)                                  │
-│  ├── function showTypingIndicator()                                  │
-│  └── function hideTypingIndicator()                                  │
-│                                                                         │
-│  Lines 251-350: Event Handlers                                        │
-│  ├── inputField.addEventListener('submit', handleSubmit)             │
-│  ├── function handleSubmit(e)                                        │
-│  │   ├── e.preventDefault()                                          │
-│  │   ├── const query = getUserInput()                               │
-│  │   ├── displayUserMessage(query)                                  │
-│  │   └── const response = await sendQuery(query)                    │
-│  └── function handleKeyPress(e)                                      │
-│                                                                         │
-│  Lines 351-450: Response Processing                                    │
-│  ├── function processStreamedResponse(stream)                        │
-│  ├── function parseMarkdown(text)                                    │
-│  ├── function highlightCode(code)                                    │
-│  └── function renderLatex(formula)                                   │
-│                                                                         │
-│  Lines 451-500: Session Management                                     │
-│  ├── function saveToLocalStorage(key, value)                        │
-│  ├── function loadChatHistory()                                     │
-│  ├── function clearSession()                                        │
-│  └── function exportChat()                                          │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
 ### Query Processing Steps
 
 1. **Frontend Initiation** (`frontend/script.js:45-72`)
