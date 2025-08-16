@@ -21,6 +21,19 @@ cp .env.example .env
 # Add your ANTHROPIC_API_KEY to the .env file
 ```
 
+### Code Quality Tools
+```bash
+# Format code automatically
+./scripts/format.sh
+
+# Run all quality checks (format, lint, types, tests)
+./scripts/quality.sh
+
+# Development helper with multiple commands
+./scripts/dev.sh [command]
+# Available commands: format, check, lint, types, test, server, clean, help
+```
+
 ### Running the Application
 ```bash
 # Quick start (recommended)
@@ -30,6 +43,9 @@ chmod +x run.sh
 # Manual start
 cd backend
 uv run uvicorn app:app --reload --port 8000
+
+# Using dev script
+./scripts/dev.sh server
 ```
 
 Access points:
@@ -115,9 +131,15 @@ Documents are processed on startup from `docs/` directory:
 
 ## Development Notes
 
+### Code Quality Standards
+- **Formatting**: Black (88 char line length)
+- **Linting**: Ruff with extended ruleset (E, W, F, I, B, C4, UP)
+- **Type Checking**: MyPy with strict settings
+- **Testing**: Pytest with fixtures and mocks
+
+Run `./scripts/quality.sh` before committing to ensure code meets standards.
+
 ### Current Limitations
-- No test suite implemented
-- No linting or formatting tools configured
 - In-memory session storage (not persistent)
 - No authentication or user management
 - No rate limiting or request validation

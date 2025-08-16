@@ -35,6 +35,39 @@ This application is a full-stack web application that enables users to query cou
    ANTHROPIC_API_KEY=your_anthropic_api_key_here
    ```
 
+## Development Tools
+
+The project includes code quality tools to ensure consistent code formatting and standards:
+
+### Code Quality Stack
+- **Black**: Automatic code formatting (88 char line length)
+- **Ruff**: Fast Python linter with extended ruleset
+- **MyPy**: Static type checking with strict settings
+- **Pytest**: Testing framework with fixtures and mocks
+
+### Development Scripts
+
+```bash
+# Auto-format all code
+./scripts/format.sh
+
+# Run all quality checks (format, lint, types, tests)
+./scripts/quality.sh
+
+# Development helper with multiple commands
+./scripts/dev.sh [command]
+# Available commands: format, check, lint, types, test, server, clean, help
+```
+
+### Pre-commit Workflow
+
+Before committing code, run:
+```bash
+./scripts/quality.sh
+```
+
+This ensures your code meets all quality standards.
+
 ## Running the Application
 
 ### Quick Start
@@ -51,6 +84,13 @@ chmod +x run.sh
 ```bash
 cd backend
 uv run uvicorn app:app --reload --port 8000
+```
+
+### Using Development Helper
+
+```bash
+# Start the development server
+./scripts/dev.sh server
 ```
 
 The application will be available at:
