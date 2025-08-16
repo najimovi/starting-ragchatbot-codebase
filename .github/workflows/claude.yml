@@ -30,6 +30,16 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Debug API Key
+        run: |
+          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "❌ ANTHROPIC_API_KEY secret is empty or not set"
+          else
+            echo "✅ ANTHROPIC_API_KEY secret is set (length: ${#API_KEY})"
+          fi
+        env:
+          API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@beta
