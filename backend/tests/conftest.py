@@ -2,9 +2,11 @@
 Shared test fixtures and configuration for all tests
 """
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch, AsyncMock
 import sys
 import os
+import asyncio
+from typing import Dict, Any
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from vector_store import VectorStore, SearchResults
@@ -182,3 +184,205 @@ def sample_search_results():
 def sample_tool_responses():
     """Provide sample tool responses for testing"""
     return SAMPLE_TOOL_RESPONSES
+
+# API Testing Fixtures
+@pytest.fixture
+def mock_session_manager():
+    """Create a mock session manager for API testing"""
+    manager = Mock()
+    manager.create_session.return_value = "test-session-123"
+    manager.get_session.return_value = {
+        "session_id": "test-session-123",
+        "history": []
+    }
+    manager.add_to_history.return_value = None
+    manager.clear_session.return_value = None
+    manager.sessions = {}
+    return manager
+
+@pytest.fixture
+def mock_document_processor():
+    """Create a mock document processor for testing"""
+    processor = Mock()
+    processor.process_file.return_value = (
+        Mock(title="Test Course", course_link="https://test.com"),
+        [Mock(text="Chunk 1", metadata={"lesson": 1})]
+    )
+    processor.process_folder.return_value = (1, 10)
+    return processor
+
+@pytest.fixture
+def api_test_data():
+    """Provide test data for API testing"""
+    return {
+        "valid_query": {
+            "query": "What is Python?",
+            "session_id": "test-123"
+        },
+        "query_without_session": {
+            "query": "Tell me about MCP"
+        },
+        "empty_query": {
+            "query": "",
+            "session_id": "test-456"
+        },
+        "special_chars_query": {
+            "query": "What about 🐍 Python & <script>?",
+            "session_id": "test-789"
+        },
+        "course_analytics": {
+            "total_courses": 5,
+            "course_titles": [
+                "Python Basics",
+                "Advanced Python",
+                "MCP: Build Rich-Context AI Apps",
+                "Machine Learning Fundamentals",
+                "Data Science with Python"
+            ]
+        }
+    }
+
+@pytest.fixture
+def mock_fastapi_dependencies():
+    """Mock FastAPI dependencies for testing"""
+    deps = {
+        "config": Mock(
+            ANTHROPIC_API_KEY="test-key",
+            ANTHROPIC_MODEL="claude-test",
+            CHROMA_PATH="./test_db"
+        ),
+        "vector_store": Mock(spec=VectorStore),
+        "ai_generator": Mock(spec=AIGenerator),
+        "rag_system": Mock()
+    }
+    
+    # Setup RAG system mock
+    deps["rag_system"].query.return_value = (
+        "Test response",
+        ["Source 1", "Source 2"]
+    )
+    deps["rag_system"].get_course_analytics.return_value = {
+        "total_courses": 2,
+        "course_titles": ["Course 1", "Course 2"]
+    }
+    deps["rag_system"].session_manager = Mock()
+    deps["rag_system"].session_manager.create_session.return_value = "new-session-id"
+    
+    return deps
+
+@pytest.fixture
+def async_mock_client():
+    """Create an async mock for HTTP client testing"""
+    mock = AsyncMock()
+    mock.post.return_value = AsyncMock(
+        status_code=200,
+        json=AsyncMock(return_value={
+            "answer": "Test answer",
+            "sources": [],
+            "session_id": "test-session"
+        })
+    )
+    mock.get.return_value = AsyncMock(
+        status_code=200,
+        json=AsyncMock(return_value={
+            "total_courses": 2,
+            "course_titles": ["Course 1", "Course 2"]
+        })
+    )
+    return mock
+
+# Test environment setup
+@pytest.fixture(autouse=True)
+def setup_test_env():
+    """Setup test environment variables"""
+    os.environ["TESTING"] = "true"
+    os.environ["ANTHROPIC_API_KEY"] = "test-key"
+    yield
+    # Cleanup
+    if "TESTING" in os.environ:
+        del os.environ["TESTING"]
+
+@pytest.fixture
+def cleanup_chroma_db():
+    """Cleanup ChromaDB test data after tests"""
+    yield
+    # Cleanup test database if it exists
+    import shutil
+    test_db_path = "./test_chroma_db"
+    if os.path.exists(test_db_path):
+        shutil.rmtree(test_db_path)
+
+# Async test support
+@pytest.fixture
+def event_loop():
+    """Create an event loop for async tests"""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+# Mock external services
+@pytest.fixture
+def mock_anthropic_service():
+    """Mock Anthropic API service"""
+    with patch('anthropic.Anthropic') as mock_anthropic:
+        client = Mock()
+        client.messages.create.return_value = Mock(
+            content=[Mock(text="Mocked AI response")],
+            stop_reason="end_turn"
+        )
+        mock_anthropic.return_value = client
+        yield client
+
+@pytest.fixture
+def mock_chromadb():
+    """Mock ChromaDB client"""
+    with patch('chromadb.Client') as mock_client:
+        client = Mock()
+        collection = Mock()
+        collection.add.return_value = None
+        collection.query.return_value = {
+            'documents': [["Doc 1", "Doc 2"]],
+            'metadatas': [[{"source": "test1"}, {"source": "test2"}]],
+            'distances': [[0.1, 0.2]]
+        }
+        collection.get.return_value = {
+            'documents': ["Doc 1"],
+            'metadatas': [{"source": "test"}]
+        }
+        client.get_or_create_collection.return_value = collection
+        mock_client.return_value = client
+        yield client
+
+# Performance testing fixtures
+@pytest.fixture
+def performance_timer():
+    """Fixture for measuring test performance"""
+    import time
+    
+    class Timer:
+        def __init__(self):
+            self.start_time = None
+            self.end_time = None
+            
+        def start(self):
+            self.start_time = time.time()
+            
+        def stop(self):
+            self.end_time = time.time()
+            
+        @property
+        def elapsed(self):
+            if self.start_time and self.end_time:
+                return self.end_time - self.start_time
+            return None
+    
+    return Timer()
+
+# Markers for test categorization
+def pytest_configure(config):
+    """Configure pytest with custom markers"""
+    config.addinivalue_line("markers", "unit: Unit tests")
+    config.addinivalue_line("markers", "integration: Integration tests")
+    config.addinivalue_line("markers", "api: API endpoint tests")
+    config.addinivalue_line("markers", "slow: Tests that take more than 1 second")
+    config.addinivalue_line("markers", "requires_api_key: Tests that require API keys")
