@@ -32,11 +32,20 @@ jobs:
 
       - name: Debug API Key
         run: |
+          echo "=== Checking GitHub Secrets ==="
           if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
             echo "❌ ANTHROPIC_API_KEY secret is empty or not set"
           else
             echo "✅ ANTHROPIC_API_KEY secret is set (length: ${#API_KEY})"
+            echo "   First 15 chars: ${API_KEY:0:15}..."
           fi
+          
+          if [ -z "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" ]; then
+            echo "❌ CLAUDE_CODE_OAUTH_TOKEN secret is empty or not set"
+          else
+            echo "✅ CLAUDE_CODE_OAUTH_TOKEN secret is set"
+          fi
+          echo "==========================="
         env:
           API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
@@ -44,7 +53,11 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@beta
         with:
+          # Authentication: Use ONE of these methods:
+          # Method 1: Direct API key (add ANTHROPIC_API_KEY secret)
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Method 2: GitHub App OAuth (install Claude Code GitHub App and it auto-creates CLAUDE_CODE_OAUTH_TOKEN)
+          # anthropic_api_key: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
